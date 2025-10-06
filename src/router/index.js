@@ -1,9 +1,5 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
-import Home from "../views/Home.vue";
-import Game from "../views/Game.vue";
-import GameEnd from "../views/GameEnd.vue";
-import GameChoice from "../views/GameChoice.vue";
 
 Vue.use(VueRouter);
 
@@ -11,26 +7,29 @@ const routes = [
   {
     path: "/",
     name: "Home",
-    component: Home,
+    component: () => import(/* webpackChunkName: "home" */ "../views/Home.vue"),
   },
   {
-    path: "/",
+    path: "/game",
     name: "Game",
-    component: Game,
+    component: () => import(/* webpackChunkName: "game" */ "../views/Game.vue"),
   },
   {
-    path: "/",
+    path: "/game-end",
     name: "GameEnd",
-    component: GameEnd,
+    component: () =>
+      import(/* webpackChunkName: "game-end" */ "../views/GameEnd.vue"),
   },
   {
     path: "/start",
     name: "GameChoice",
-    component: GameChoice,
+    component: () =>
+      import(/* webpackChunkName: "game-choice" */ "../views/GameChoice.vue"),
   },
 ];
 
 const router = new VueRouter({
+  mode: "history",
   routes,
 });
 

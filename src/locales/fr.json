@@ -1,4 +1,30 @@
 {
-  "message": "hello i18n !!",
-  "POINTS": "point | point | points"
+  "POINTS": "point | point | points",
+  "HOME": {
+    "NEW_GAME": "Nouvelle Partie"
+  },
+  "DIFFICULTY": {
+    "EASY": "Facile",
+    "EASY_DESC": "10 oeuvres au hasard parmi les 40 tableaux plus populaires de la galerie : idéal pour se mettre en jambes !",
+    "MEDIUM": "Moyen",
+    "MEDIUM_DESC": "15 oeuvres au hasard parmi les 80 tableaux plus populaires de la galerie : on ne rigole plus !",
+    "HARD": "Difficile",
+    "HARD_DESC": "20 oeuvres au hasard parmi toute la galerie : le défi ultime !"
+  },
+  "VALIDATION": {
+    "SUCCESS": "Bravo !",
+    "CLOSE": "Presque...",
+    "WRONG": "Non !"
+  },
+  "GAME": {
+    "NEXT": "Suivant",
+    "SUMMARY": "Bilan de la partie",
+    "SOLUTION": "Solution",
+    "TIME_UP": "Oh non, temps écoulé !"
+  },
+  "GAME_END": {
+    "SCORE": "Votre score est de {score} {score, plural, =0{point} =1{point} other{points}} !",
+    "NEW_GAME": "Nouvelle partie !",
+    "GALLERY": "Galerie de votre partie"
+  }
 }

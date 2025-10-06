@@ -3,14 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
+    "serve": "NODE_OPTIONS=--openssl-legacy-provider vue-cli-service serve",
+    "build": "NODE_OPTIONS=--openssl-legacy-provider vue-cli-service build",
     "lint": "vue-cli-service lint",
     "i18n:report": "vue-cli-service i18n:report --src \"./src/**/*.?(js|vue)\" --locales \"./src/locales/**/*.json\""
   },
   "dependencies": {
     "core-js": "^3.6.5",
-    "pixelate": "0.0.5",
     "string-similarity": "^4.0.4",
     "vue": "^2.6.11",
     "vue-i18n": "^8.22.3",
@@ -31,8 +30,6 @@
     "eslint": "^6.7.2",
     "eslint-plugin-prettier": "^3.3.1",
     "eslint-plugin-vue": "^6.2.2",
-    "less": "^3.0.4",
-    "less-loader": "^5.0.0",
     "prettier": "^2.2.1",
     "sass": "^1.32.8",
     "sass-loader": "^10.0.0",

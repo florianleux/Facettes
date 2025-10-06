@@ -3,7 +3,7 @@
     <v-row>
       <v-col class="pt-16">
         <v-btn @click="startQuickGame" class="ma-auto d-block">
-          Nouvelle Partie
+          {{ $t("HOME.NEW_GAME") }}
         </v-btn>
       </v-col>
     </v-row>

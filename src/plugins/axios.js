@@ -3,24 +3,17 @@
 import Vue from "vue";
 import axios from "axios";
 
-// Full config:  https://github.com/axios/axios#request-config
-// axios.defaults.baseURL = process.env.baseURL || process.env.apiUrl || '';
-// axios.defaults.headers.common['Authorization'] = AUTH_TOKEN;
-// axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded';
-
-let config = {
+// API Configuration
+// To use: Create a .env.local file with VUE_APP_API_KEY=your_key_here
+const config = {
   headers: {
     get: {
-      // can be common or any other method
-      ApiKey:
-        "f9d7b606d08a6b77725f64faf41fabab32fb306de7a197759accc7b16703cc56",
+      ApiKey: process.env.VUE_APP_API_KEY || "",
       "Content-Type": "application/json",
     },
   },
-  baseURL: "https://api.art.rmngp.fr:443/",
-  // baseURL: process.env.baseURL || process.env.apiUrl || ""
-  // timeout: 60 * 1000, // Timeout
-  // withCredentials: true, // Check cross-site Access-Control
+  baseURL: process.env.VUE_APP_API_BASE_URL || "https://api.art.rmngp.fr:443/",
+  timeout: 60 * 1000,
 };
 
 const _axios = axios.create(config);

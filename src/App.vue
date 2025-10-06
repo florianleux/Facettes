@@ -17,8 +17,8 @@ export default {
 };
 </script>
 <style>
-
-.main-font,.v-btn{
+.main-font,
+.v-btn {
   font-family: Made;
 }
 .theme--light.v-application {
@@ -27,7 +27,7 @@ export default {
 
 @font-face {
   font-family: "Made";
-  src: url("assets/fonts/made.otf") format("truetype");
+  src: url("assets/fonts/made.otf") format("opentype");
 }
 @font-face {
   font-family: "Mermaid";

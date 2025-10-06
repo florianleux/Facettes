@@ -1,0 +1,31 @@
+{
+  "POINTS": "point | point | points",
+  "HOME": {
+    "NEW_GAME": "New Game"
+  },
+  "DIFFICULTY": {
+    "EASY": "Easy",
+    "EASY_DESC": "10 random artworks from the 40 most popular paintings in the gallery: perfect for warming up!",
+    "MEDIUM": "Medium",
+    "MEDIUM_DESC": "15 random artworks from the 80 most popular paintings in the gallery: now we're getting serious!",
+    "HARD": "Hard",
+    "HARD_DESC": "20 random artworks from the entire gallery: the ultimate challenge!"
+  },
+  "VALIDATION": {
+    "SUCCESS": "Bravo!",
+    "CLOSE": "Almost...",
+    "WRONG": "No!"
+  },
+  "GAME": {
+    "NEXT": "Next",
+    "SUMMARY": "Game Summary",
+    "SOLUTION": "Solution",
+    "TIME_UP": "Oh no, time's up!"
+  },
+  "GAME_END": {
+    "SCORE": "Your score is {score} {score, plural, =0{point} =1{point} other{points}}!",
+    "NEW_GAME": "New Game!",
+    "GALLERY": "Your Game Gallery"
+  }
+}
+

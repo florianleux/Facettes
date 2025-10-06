@@ -2,23 +2,16 @@
   <v-container>
     <v-row>
       <div class="mt-16 mb-4 mx-auto main">
-        <canvas id="Canvas">
-        </canvas>
+        <canvas id="Canvas"></canvas>
         <div
-            class=" timer"
-            :class="{'animate__animated animate__infinite	animate__heartBeat' : timer >0}"
+          class="timer"
+          :class="{
+            'animate__animated animate__infinite animate__heartBeat': timer > 0,
+          }"
         >
-          <template v-if="!success && timer>0">
+          <template v-if="!success && timer > 0">
             {{ timer }}
           </template>
-<!--          <v-icon-->
-<!--              v-else-if="success"-->
-<!--              color="#ffc800"-->
-<!--              large-->
-<!--          >-->
-<!--            fa-trophy-->
-<!--          </v-icon>-->
-
         </div>
       </div>
     </v-row>
@@ -31,65 +24,67 @@
           <h3 class="text-center">
             {{ pickedPainting.author }}
           </h3>
-          <v-btn v-if="currentRound<settings.rounds" class="mx-auto d-block mt-4" @click="loadImage">
-            Suivant
+          <v-btn
+            v-if="currentRound < settings.rounds"
+            class="mx-auto d-block mt-4"
+            @click="loadImage"
+          >
+            {{ $t("GAME.NEXT") }}
           </v-btn>
-          <v-btn v-else class="mx-auto d-block mt-4" @click="$router.push({ name: 'GameEnd' })">
-            Bilan de la partie
+          <v-btn
+            v-else
+            class="mx-auto d-block mt-4"
+            @click="$router.push({ name: 'GameEnd' })"
+          >
+            {{ $t("GAME.SUMMARY") }}
           </v-btn>
         </div>
         <v-form
-            autocomplete="off"
-            v-else-if="timer > 0"
-            class="game-form mx-auto"
-            @enter.prevent.stop="submit"
-            @submit.prevent.stop="submit"
+          autocomplete="off"
+          v-else-if="timer > 0"
+          class="game-form mx-auto"
+          @enter.prevent.stop="submit"
+          @submit.prevent.stop="submit"
         >
-            <h1 class=" mb-6 text-center">
-              {{titleTip}}
-            </h1>
+          <h1 class="mb-6 text-center">
+            {{ titleTip }}
+          </h1>
 
           <v-text-field
-              solo
-              hide-details
-              @enter.stop="submit"
-              v-model="titleGuess"
-              class="guess-input mx-auto d-block"
+            solo
+            hide-details
+            @enter.stop="submit"
+            v-model="titleGuess"
+            class="guess-input mx-auto d-block"
           />
 
-
           <v-snackbar
-              class="snackbar"
-              v-model="validationMessage.show"
-              absolute
-              :color="validationMessage.color"
-              timeout="1300"
+            class="snackbar"
+            v-model="validationMessage.show"
+            absolute
+            :color="validationMessage.color"
+            timeout="1300"
           >
             <div class="text-center">{{ validationMessage.text }}</div>
           </v-snackbar>
         </v-form>
         <div v-else>
-          <v-icon
-              class="d-block mx-auto text-center"
-              color="error"
-              large
-          >
+          <v-icon class="d-block mx-auto text-center" color="error" large>
             far fa-frown
           </v-icon>
           <div class="error--text main-font d-block mx-auto text-center">
-            Oh non, temps écoulé !
+            {{ $t("GAME.TIME_UP") }}
           </div>
           <v-btn
-              class="mt-6 mx-auto d-block text-center"
-              @click.stop="
-            answerShown = true;
-            renderImage(1)
+            class="mt-6 mx-auto d-block text-center"
+            @click.stop="
+              answerShown = true;
+              renderImage(1);
             "
           >
-            Solution
+            {{ $t("GAME.SOLUTION") }}
           </v-btn>
         </div>
-
       </v-col>
     </v-row>
 
@@ -98,7 +93,9 @@
       <div class="value">{{ currentRound }}/{{ settings.rounds }}</div>
     </div>
     <div class="score">
-      <div v-if="points > 0" class="points animate__animated animate__fadeInUp">+ {{ points }}</div>
+      <div v-if="points > 0" class="points animate__animated animate__fadeInUp">
+        + {{ points }}
+      </div>
       <div class="value">{{ playerScore }}</div>
       <div class="text">{{ $tc("POINTS", playerScore) }}</div>
     </div>
@@ -108,6 +105,8 @@
 <script>
 import { mapState, mapActions } from "vuex";
 import { compareTwoStrings } from "string-similarity";
+import { SIMILARITY_THRESHOLDS, IMAGE_RENDERING } from "@/utils/constants";
+import { normalizeString, createTitleHint } from "@/utils/stringHelpers";
 
 export default {
   name: "Game",
@@ -128,102 +127,139 @@ export default {
     width: 0,
     timer: 0,
     points: 0,
-    titleTip:null,
+    titleTip: null,
+    renderTimer: null,
+    countdownTimer: null,
     validationMessage: {
       text: "",
       color: "",
-      show: false
-    }
+      show: false,
+    },
+    imageLoadError: false,
   }),
+
+  created() {
+    // Check if game was properly started (not a page refresh)
+    if (!this.$store.state.gameStarted) {
+      // User refreshed on /game or navigated directly - redirect to home
+      this.$router.replace({ name: "Home" });
+      return;
+    }
+
+    // Reset game state when component is created
+    this.currentRound = 0;
+    this.pickedPaintingIndexes = [];
+    this.success = false;
+    this.answerShown = false;
+    this.points = 0;
+  },
+
   mounted() {
     this.loadImage();
   },
+
+  beforeDestroy() {
+    this.cleanupTimers();
+  },
+
   computed: {
-    ...mapState(["playerScore"]),
+    ...mapState(["playerScore", "gameHistory"]),
     timerInterval() {
-      return Math.floor(this.settings.time / 11);
+      return Math.floor(this.settings.time / IMAGE_RENDERING.TIMER_DIVISIONS);
     },
     settings() {
       return this.$store.state.settings[this.$store.state.difficulty];
-    }
+    },
   },
+
   methods: {
-    ...mapActions(["incrementScore"]),
-    replace(str) {
-      return str.split("").map(char => {
-       return Math.random() > 0.35 && ![" ", ",", "!",":", "'"].includes(char) ? "_" : char
-      }).join("");
+    ...mapActions(["incrementScore", "setRoundPoints", "addGameHistory"]),
+
+    cleanupTimers() {
+      if (this.renderTimer) {
+        clearTimeout(this.renderTimer);
+        this.renderTimer = null;
+      }
+      if (this.countdownTimer) {
+        clearTimeout(this.countdownTimer);
+        this.countdownTimer = null;
+      }
     },
     startRender() {
-      var _this = this;
+      if (this.renderTimer) clearTimeout(this.renderTimer);
 
       if (this.percent < 1 && this.timer > 0) {
-        setTimeout(
-            function() {
-              if (_this.percent <= 0.8) {
-                _this.percent +=
-                    _this.percent > 0.1 ? 0.1 : 0.01;
-              } else {
-                _this.percent = 1;
-              }
+        this.renderTimer = setTimeout(() => {
+          if (this.percent <= IMAGE_RENDERING.MAX_RENDER_PERCENT) {
+            this.percent +=
+              this.percent > IMAGE_RENDERING.THRESHOLD
+                ? IMAGE_RENDERING.LARGE_INCREMENT
+                : IMAGE_RENDERING.SMALL_INCREMENT;
+          } else {
+            this.percent = IMAGE_RENDERING.FINAL_PERCENT;
+          }
 
-              _this.renderImage(_this.percent);
+          this.renderImage(this.percent);
 
-              if (_this.percent < 0.99 && _this.timer > 0) {
-                _this.startRender();
-              }
-            },
-            this.timerInterval * 1000
-        );
+          if (this.percent < 0.99 && this.timer > 0) {
+            this.startRender();
+          }
+        }, this.timerInterval * 1000);
       }
     },
     renderImage(percent) {
       this.context.drawImage(
-          this.image,
-          0,
-          0,
-          this.width * percent,
-          this.height * percent
+        this.image,
+        0,
+        0,
+        this.width * percent,
+        this.height * percent
       );
 
       // Stretch the smaller imagex onto larger context.
       this.context.drawImage(
-          this.canvas,
-          0,
-          0,
-          this.width * percent,
-          this.height * percent,
-          0,
-          0,
-          this.width,
-          this.height
+        this.canvas,
+        0,
+        0,
+        this.width * percent,
+        this.height * percent,
+        0,
+        0,
+        this.width,
+        this.height
       );
     },
     submit() {
-      let score = compareTwoStrings(
-          this.titleGuess
-              .toLowerCase()
-              .normalize("NFD")
-              .replace(/[\u0300-\u036f]/g, ""),
-          this.pickedPainting.title
-              .toLowerCase()
-              .normalize("NFD")
-              .replace(/[\u0300-\u036f]/g, "")
-      );
+      const normalizedGuess = normalizeString(this.titleGuess);
+      const normalizedTitle = normalizeString(this.pickedPainting.title);
+      const score = compareTwoStrings(normalizedGuess, normalizedTitle);
 
-      if (
-          score > 0.7 ||
-          (this.pickedPainting.title.toLowerCase().length > 30 && score > 0.6)
-      ) {
-        this.validationMessage.text = "Bravo !";
+      const isLongTitle =
+        this.pickedPainting.title.length >
+        SIMILARITY_THRESHOLDS.LONG_TITLE_LENGTH;
+      const exactMatchThreshold = isLongTitle
+        ? SIMILARITY_THRESHOLDS.PARTIAL_MATCH_ADJUSTMENT
+        : SIMILARITY_THRESHOLDS.EXACT_MATCH;
+
+      if (score > exactMatchThreshold) {
+        this.validationMessage.text = this.$t("VALIDATION.SUCCESS");
         this.validationMessage.color = "success";
 
-        this.points = Math.floor((1 / this.percent) / 5) + 1;
+        this.points = Math.floor(1 / this.percent / 5) + 1;
 
         setTimeout(() => {
-          this.$store.state.gameHistory[this.currentRound-1].points =this.points;
+          if (
+            this.currentRound > 0 &&
+            this.currentRound <= this.gameHistory.length
+          ) {
+            this.setRoundPoints({
+              roundIndex: this.currentRound - 1,
+              points: this.points,
+            });
+          }
           this.incrementScore(this.points);
         }, 600);
+
         setTimeout(() => {
           this.points = 0;
         }, 700);
@@ -234,23 +270,14 @@ export default {
           this.success = true;
         }, 700);
       } else if (
-          score > 0.5 ||
-          (this.pickedPainting.title
-                  .toLowerCase()
-                  .normalize("NFD")
-                  .replace(/[\u0300-\u036f]/g, "")
-                  .includes(
-                      this.titleGuess
-                          .toLowerCase()
-                          .normalize("NFD")
-                          .replace(/[\u0300-\u036f]/g, "")
-                  ) &&
-              this.titleGuess.toLowerCase().length > 5)
+        score > SIMILARITY_THRESHOLDS.CLOSE_MATCH ||
+        (normalizedTitle.includes(normalizedGuess) &&
+          this.titleGuess.length > SIMILARITY_THRESHOLDS.MINIMUM_GUESS_LENGTH)
       ) {
-        this.validationMessage.text = "Presque...";
+        this.validationMessage.text = this.$t("VALIDATION.CLOSE");
         this.validationMessage.color = "warning";
       } else {
-        this.validationMessage.text = "Non !";
+        this.validationMessage.text = this.$t("VALIDATION.WRONG");
         this.validationMessage.color = "error";
       }
 
@@ -261,118 +288,112 @@ export default {
     },
     loadImage() {
       this.resetGame();
-      let canvas, context;
+      const canvas = document.getElementById("Canvas");
+      const context = canvas.getContext("2d");
 
-      canvas = document.getElementById("Canvas");
-      context = canvas.getContext("2d");
+      const image = new Image();
+      image.crossOrigin = "anonymous";
 
-      // This is what gives us that blocky pixel styling, rather than a blend between pixels.
+      image.onload = () => {
+        this.imageLoadError = false;
+        this.percent = IMAGE_RENDERING.INITIAL_PERCENT;
 
-      let image = new Image();
+        // Only increment round and add to history when image successfully loads
+        this.currentRound++;
+        this.addGameHistory(this.pickedPainting);
 
-      let _this = this;
-
-      image.onload = function() {
-        _this.percent = 0.01;
-
-        let ratio = image.width / image.height;
-
+        const ratio = image.width / image.height;
         if (image.height > window.innerHeight * 0.5) {
           image.height = window.innerHeight * 0.5;
           image.width = image.height * ratio;
         }
 
-        // Get the dimensions of loaded image.
-        var width = image.width;
-        var height = image.height;
+        const width = image.width;
+        const height = image.height;
 
         canvas.width = width;
         canvas.height = height;
 
-        canvas.style.cssText =
-            "image-rendering: optimizeSpeed;" + // FireFox < 6.0
-            "image-rendering: -moz-crisp-edges;" + // FireFox
-            "image-rendering: -o-crisp-edges;" + // Opera
-            "image-rendering: -webkit-crisp-edges;" + // Chrome
-            "image-rendering: crisp-edges;" + // Chrome
-            "image-rendering: -webkit-optimize-contrast;" + // Safari
-            "image-rendering: pixelated; " + // Future browsers
-            "-ms-interpolation-mode: nearest-neighbor;"; // IE
+        // Set pixelated rendering style
+        canvas.style.imageRendering = "pixelated";
 
+        // Disable image smoothing for all browsers
         context.webkitImageSmoothingEnabled = false;
         context.mozImageSmoothingEnabled = false;
         context.msImageSmoothingEnabled = false;
         context.imageSmoothingEnabled = false;
 
-        // Calculate the scaled dimensions.
-        var scaledWidth = width * _this.percent;
-        var scaledHeight = height * _this.percent;
+        const scaledWidth = width * this.percent;
+        const scaledHeight = height * this.percent;
 
-        // Render image smaller.
+        // Render image smaller
         context.drawImage(image, 0, 0, scaledWidth, scaledHeight);
 
-        // Stretch the smaller image onto larger context.
+        // Stretch the smaller image onto larger context
         context.drawImage(
-            canvas,
-            0,
-            0,
-            scaledWidth,
-            scaledHeight,
-            0,
-            0,
-            width,
-            height
+          canvas,
+          0,
+          0,
+          scaledWidth,
+          scaledHeight,
+          0,
+          0,
+          width,
+          height
         );
 
-        _this.width = width;
-        _this.height = height;
+        this.width = width;
+        this.height = height;
+        this.canvas = canvas;
+        this.image = image;
+        this.context = context;
 
-        _this.canvas = canvas;
-        _this.image = image;
-        _this.context = context;
-
-        _this.startRender();
+        this.startRender();
       };
 
-      image.src = _this.pickPainting(
-          _this.settings.maxIndex
-      );
-      // image.src = "https://avalon.fabiosacdn.com/image/d3783d23-d946-41ea-ac41-d1acac3e8332.jpg"
+      image.onerror = () => {
+        console.error("Failed to load image:", image.src);
+        this.imageLoadError = true;
+        // Try loading next image
+        if (this.currentRound < this.settings.rounds) {
+          this.loadImage();
+        }
+      };
+
+      image.src = this.pickPainting(this.settings.maxIndex);
     },
     pickPainting(maxIndex) {
-      let index = -1;
-
-      index = Math.floor(Math.random() * maxIndex);
+      let index = Math.floor(Math.random() * maxIndex);
 
       while (this.pickedPaintingIndexes.includes(index)) {
         index = Math.floor(Math.random() * maxIndex);
       }
 
       this.pickedPainting = this.$store.state.paintingList[index];
-      this.titleTip = this.replace(this.pickedPainting.title);
+      this.titleTip = createTitleHint(this.pickedPainting.title);
       this.pickedPaintingIndexes.push(index);
 
-      this.currentRound++;
-      this.$store.state.gameHistory.push(
-          this.$store.state.paintingList[index]
-      )
       return this.$store.state.paintingList[index].imageUrl;
     },
-    resetGame(){
-      this.timer = this.settings.time;      this.success = false;      this.answerShown = false;
-     this.gamePaused = false;
+
+    resetGame() {
+      this.timer = this.settings.time;
+      this.success = false;
+      this.answerShown = false;
       this.startTimer();
     },
+
     startTimer() {
-      this.timer--;
-      let _this = this;
-      if (this.timer > 0 & !this.success) {
-        setTimeout(() => {
-          _this.startTimer();
+      if (this.countdownTimer) clearTimeout(this.countdownTimer);
+
+      if (this.timer > 0 && !this.success) {
+        this.countdownTimer = setTimeout(() => {
+          this.timer--;
+          this.startTimer();
         }, 1000);
       }
-    }
-  }
+    },
+  },
 };
 </script>
 
@@ -394,7 +415,9 @@ canvas {
   left: 0;
   width: 100%;
   font-family: Made;
-  *{text-align: center  ;}
+  * {
+    text-align: center;
+  }
 }
 
 .main {
@@ -457,7 +480,6 @@ canvas {
   }
 }
 
-
 h1 {
   font-family: Made;
   font-size: 30px;
@@ -475,8 +497,10 @@ h3 {
   font-size: 15px;
 }
 
-.guess-input{
-  ::v-deep input{text-align: center;}
+.guess-input {
+  ::v-deep input {
+    text-align: center;
+  }
   max-width: 500px;
 }
 </style>
