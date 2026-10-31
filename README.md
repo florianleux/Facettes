@@ -1,5 +1,7 @@
 # Facettes
 
+[▶ Jouer / Play](https://facettes.florianleux.fr)
+
 ## 🇫🇷 En français
 
 Un jeu pour découvrir des tableaux célèbres, en pixel art.
